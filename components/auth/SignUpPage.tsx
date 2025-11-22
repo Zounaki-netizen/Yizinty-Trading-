@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Lock, Mail, User, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, User, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface Props {
@@ -23,7 +24,6 @@ export const SignUpPage: React.FC<Props> = ({ onSwitchToLogin }) => {
     e.preventDefault();
     setError('');
     
-    // Mobile fix: Trim inputs before validation
     const cleanEmail = email.trim();
     const cleanPass = password.trim();
     const cleanConfirm = confirmPassword.trim();
@@ -41,18 +41,10 @@ export const SignUpPage: React.FC<Props> = ({ onSwitchToLogin }) => {
     setIsLoading(true);
 
     try {
-        // Check if user already exists locally
-        const existing = localStorage.getItem(`yizinity_user_profile_${cleanEmail.toLowerCase()}`);
-        if (existing) {
-            setError('Account with this email already exists. Please Sign In.');
-            setIsLoading(false);
-            return;
-        }
-
         await signup(cleanEmail, name, cleanPass);
-        // AuthContext will handle redirect via state change
-    } catch (err) {
-        setError('Failed to create account.');
+    } catch (err: any) {
+        console.error(err);
+        setError(err.message || 'Failed to create account.');
         setIsLoading(false);
     }
   };
@@ -104,7 +96,7 @@ export const SignUpPage: React.FC<Props> = ({ onSwitchToLogin }) => {
                 type="text" 
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-black/20 border border-white/[0.1] rounded-xl pl-10 pr-4 py-3 text-white outline-none focus:border-brand-500 transition-all text-sm font-medium placeholder:text-white/10"
+                className="w-full bg-black/20 border border-white/[0.1] rounded-xl pl-10 pr-4 py-3 text-white outline-none focus:border-brand-500 transition-all text-base md:text-sm font-medium placeholder:text-white/10"
                 placeholder="John Doe"
                 />
             </div>
@@ -118,7 +110,7 @@ export const SignUpPage: React.FC<Props> = ({ onSwitchToLogin }) => {
                 type="email" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-black/20 border border-white/[0.1] rounded-xl pl-10 pr-4 py-3 text-white outline-none focus:border-brand-500 transition-all text-sm font-medium placeholder:text-white/10"
+                className="w-full bg-black/20 border border-white/[0.1] rounded-xl pl-10 pr-4 py-3 text-white outline-none focus:border-brand-500 transition-all text-base md:text-sm font-medium placeholder:text-white/10"
                 placeholder="trader@example.com"
                 />
             </div>
@@ -132,7 +124,7 @@ export const SignUpPage: React.FC<Props> = ({ onSwitchToLogin }) => {
                 type="password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-black/20 border border-white/[0.1] rounded-xl pl-10 pr-4 py-3 text-white outline-none focus:border-brand-500 transition-all text-sm font-medium placeholder:text-white/10"
+                className="w-full bg-black/20 border border-white/[0.1] rounded-xl pl-10 pr-4 py-3 text-white outline-none focus:border-brand-500 transition-all text-base md:text-sm font-medium placeholder:text-white/10"
                 placeholder="••••••••"
                 />
             </div>
@@ -146,7 +138,7 @@ export const SignUpPage: React.FC<Props> = ({ onSwitchToLogin }) => {
                 type="password" 
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full bg-black/20 border border-white/[0.1] rounded-xl pl-10 pr-4 py-3 text-white outline-none focus:border-brand-500 transition-all text-sm font-medium placeholder:text-white/10"
+                className="w-full bg-black/20 border border-white/[0.1] rounded-xl pl-10 pr-4 py-3 text-white outline-none focus:border-brand-500 transition-all text-base md:text-sm font-medium placeholder:text-white/10"
                 placeholder="••••••••"
                 />
             </div>

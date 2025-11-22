@@ -1,6 +1,9 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { db } from '../lib/db';
 
 interface User {
+  id: string;
   name: string;
   email: string;
 }
@@ -8,7 +11,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<void>;
   signup: (email: string, name: string, password: string) => Promise<void>;
   logout: () => void;
 }
@@ -19,66 +22,75 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Load session on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem('yizinity_user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error("Failed to parse user", e);
+    const checkSession = async () => {
+      const storedSession = localStorage.getItem('yizinity_session_v2');
+      if (storedSession) {
+        try {
+          const sessionUser = JSON.parse(storedSession);
+          // Validate with DB
+          const dbUser = await db.findUserByEmail(sessionUser.email);
+          if (dbUser) {
+            setUser({ id: dbUser.id, name: dbUser.name, email: dbUser.email });
+          } else {
+            localStorage.removeItem('yizinity_session_v2');
+          }
+        } catch (e) {
+          localStorage.removeItem('yizinity_session_v2');
+        }
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+    
+    checkSession();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    // Shorter delay for better UX
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // CRITICAL FIX: Trim inputs to handle mobile keyboard auto-spacing
-    const cleanEmail = email.trim().toLowerCase();
+  const login = async (email: string, password: string) => {
+    const cleanEmail = email.trim();
     const cleanPass = password.trim();
-
-    const storedProfile = localStorage.getItem(`yizinity_user_profile_${cleanEmail}`);
     
-    if (!storedProfile) {
-        return false; // Account does not exist
+    const dbUser = await db.findUserByEmail(cleanEmail);
+    
+    if (!dbUser) {
+      throw new Error("Account not found. Please sign up first.");
+    }
+    
+    if (dbUser.password !== cleanPass) {
+      throw new Error("Incorrect password. Please try again.");
     }
 
-    const profile = JSON.parse(storedProfile);
-    
-    // Check password (trimmed)
-    if (profile.password !== cleanPass) {
-        return false; // Wrong password
-    }
-
-    const userObj = { name: profile.name, email: cleanEmail };
-    setUser(userObj);
-    localStorage.setItem('yizinity_user', JSON.stringify(userObj));
-    return true;
+    const sessionUser = { id: dbUser.id, name: dbUser.name, email: dbUser.email };
+    setUser(sessionUser);
+    localStorage.setItem('yizinity_session_v2', JSON.stringify(sessionUser));
   };
 
   const signup = async (email: string, name: string, password: string) => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanName = name.trim();
+    const cleanEmail = email.trim();
     const cleanPass = password.trim();
+    const cleanName = name.trim();
 
-    const newUser = { email: cleanEmail, name: cleanName, password: cleanPass };
-    
-    // Save a permanent profile record with password
-    localStorage.setItem(`yizinity_user_profile_${cleanEmail}`, JSON.stringify(newUser));
-    
-    // Log them in immediately
-    const sessionUser = { name: cleanName, email: cleanEmail };
-    setUser(sessionUser);
-    localStorage.setItem('yizinity_user', JSON.stringify(sessionUser));
+    try {
+        const newUser = await db.createUser({
+            email: cleanEmail,
+            name: cleanName,
+            password: cleanPass
+        });
+        
+        const sessionUser = { id: newUser.id, name: newUser.name, email: newUser.email };
+        setUser(sessionUser);
+        localStorage.setItem('yizinity_session_v2', JSON.stringify(sessionUser));
+    } catch (e: any) {
+        if (e.message === "User already exists") {
+            throw new Error("Account already exists with this email. Please log in.");
+        }
+        throw e;
+    }
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('yizinity_user');
+    localStorage.removeItem('yizinity_session_v2');
   };
 
   return (

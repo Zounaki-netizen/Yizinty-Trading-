@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Lock, Mail } from 'lucide-react';
+import { ArrowRight, Lock, Mail, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface Props {
@@ -25,13 +26,9 @@ export const LoginPage: React.FC<Props> = ({ onSwitchToSignup }) => {
     setError('');
 
     try {
-        const success = await login(email, password);
-        if (!success) {
-            setError('Invalid credentials or account does not exist.');
-            setIsLoading(false);
-        }
-    } catch (e) {
-        setError('Something went wrong. Please try again.');
+        await login(email, password);
+    } catch (e: any) {
+        setError(e.message || 'Invalid credentials.');
         setIsLoading(false);
     }
   };
@@ -62,8 +59,9 @@ export const LoginPage: React.FC<Props> = ({ onSwitchToSignup }) => {
             <motion.div 
                 initial={{ opacity: 0, height: 0 }} 
                 animate={{ opacity: 1, height: 'auto' }}
-                className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-bold px-4 py-3 rounded-lg mb-6 flex items-center justify-center text-center"
+                className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-bold px-4 py-3 rounded-lg mb-6 flex items-center gap-2"
             >
+                <AlertCircle size={16} className="shrink-0" />
                 {error}
             </motion.div>
           )}
@@ -82,7 +80,7 @@ export const LoginPage: React.FC<Props> = ({ onSwitchToSignup }) => {
                   type="email" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-black/20 border border-white/[0.1] rounded-xl pl-10 pr-4 py-3 text-white outline-none focus:border-brand-500 transition-all text-sm font-medium placeholder:text-white/10"
+                  className="w-full bg-black/20 border border-white/[0.1] rounded-xl pl-10 pr-4 py-3 text-white outline-none focus:border-brand-500 transition-all text-base md:text-sm font-medium placeholder:text-white/10"
                   placeholder="trader@example.com"
                 />
               </div>
@@ -96,7 +94,7 @@ export const LoginPage: React.FC<Props> = ({ onSwitchToSignup }) => {
                   type="password" 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-black/20 border border-white/[0.1] rounded-xl pl-10 pr-4 py-3 text-white outline-none focus:border-brand-500 transition-all text-sm font-medium placeholder:text-white/10"
+                  className="w-full bg-black/20 border border-white/[0.1] rounded-xl pl-10 pr-4 py-3 text-white outline-none focus:border-brand-500 transition-all text-base md:text-sm font-medium placeholder:text-white/10"
                   placeholder="••••••••"
                 />
               </div>

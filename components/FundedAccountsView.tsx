@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useMemo } from 'react';
 import { PropAccount, AccountStatus, Trade } from '../types';
-import { Plus, Wallet, TrendingUp, DollarSign, X, Upload, Trash2, History, Eye, PenSquare, Clock, Filter, CreditCard, Check, AlertCircle, Calendar, Save } from 'lucide-react';
+import { Plus, Wallet, TrendingUp, DollarSign, X, Upload, Trash2, History, Eye, PenSquare, Clock, Filter, CreditCard, Check, AlertCircle, Calendar, Save, Award, ArrowRight, Download } from 'lucide-react';
 import { FIRM_LOGOS } from '../constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
@@ -242,6 +242,8 @@ export const FundedAccountsView: React.FC<Props> = ({ accounts, trades = [], onA
       return key ? FIRM_LOGOS[key] : null;
   };
 
+  const selectedAccount = accounts.find(a => a.id === selectedAccountId);
+
   return (
     <div className="relative w-full min-h-screen font-sans overflow-hidden -mt-8 -mx-8 p-8">
        {/* Ambient Background */}
@@ -439,8 +441,8 @@ export const FundedAccountsView: React.FC<Props> = ({ accounts, trades = [], onA
                     {/* Certificate Teaser */}
                     <div className="mt-4 pt-4 border-t border-white/[0.05]">
                         {account.certificate ? (
-                             <button onClick={() => window.open(account.certificate)} className="w-full text-[10px] text-brand-500 font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:underline">
-                                <Upload size={10} /> View Certificate
+                             <button onClick={() => openDetailsModal(account.id)} className="w-full text-[10px] text-brand-500 font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:underline">
+                                <Award size={10} /> View Certificate
                              </button>
                         ) : (
                             <button onClick={() => fileInputRefs.current[account.id]?.click()} className="w-full text-[10px] text-white/20 font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:text-white transition-colors">
@@ -453,6 +455,232 @@ export const FundedAccountsView: React.FC<Props> = ({ accounts, trades = [], onA
             );})}
         </div>
       </motion.div>
+
+      {/* --- PAYOUT MODAL --- */}
+      <AnimatePresence>
+        {isPayoutModalOpen && selectedAccount && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                    className="bg-[#050505]/95 w-full max-w-md rounded-3xl border border-white/[0.1] p-6 shadow-2xl relative overflow-hidden"
+                >
+                    {/* Ambient Light */}
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/10 rounded-full mix-blend-normal filter blur-[60px] pointer-events-none" />
+                    
+                    <div className="relative z-10">
+                        <div className="flex justify-between items-start mb-6">
+                            <div>
+                                <h3 className="text-xl font-bold text-white">Log Withdrawal</h3>
+                                <p className="text-white/40 text-xs mt-1">Record a payout for {selectedAccount.firmName}</p>
+                            </div>
+                            <button onClick={() => setIsPayoutModalOpen(false)} className="p-2 rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-[10px] font-bold text-white/40 uppercase mb-2 tracking-wider">Amount ($)</label>
+                                <div className="relative group">
+                                    <DollarSign size={16} className="absolute left-3 top-3.5 text-emerald-500" />
+                                    <input 
+                                        type="number" 
+                                        autoFocus
+                                        className="w-full bg-white/[0.03] border border-white/[0.1] rounded-xl pl-10 pr-4 py-3 text-white outline-none focus:border-emerald-500 focus:bg-white/[0.05] transition-all font-mono font-bold text-lg" 
+                                        placeholder="0.00" 
+                                        value={payoutAmount} 
+                                        onChange={e => setPayoutAmount(e.target.value)} 
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label className="block text-[10px] font-bold text-white/40 uppercase mb-2 tracking-wider">Date Received</label>
+                                <div className="relative">
+                                    <Calendar size={16} className="absolute left-3 top-3.5 text-white/20" />
+                                    <input 
+                                        type="date" 
+                                        className="w-full bg-white/[0.03] border border-white/[0.1] rounded-xl pl-10 pr-4 py-3 text-white outline-none focus:border-brand-500 transition-all text-sm font-medium" 
+                                        value={payoutDate} 
+                                        onChange={e => setPayoutDate(e.target.value)} 
+                                    />
+                                </div>
+                            </div>
+
+                            <button 
+                                onClick={handleSavePayout} 
+                                className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-bold py-4 rounded-xl shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 mt-2"
+                            >
+                                <Check size={18} strokeWidth={3} /> Confirm Payout
+                            </button>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
+        )}
+      </AnimatePresence>
+
+
+      {/* --- DETAILS MODAL --- */}
+      <AnimatePresence>
+        {isDetailsModalOpen && selectedAccount && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                    className="bg-[#050505] w-full max-w-5xl rounded-3xl border border-white/[0.1] shadow-2xl relative overflow-hidden flex flex-col h-[90vh]"
+                >
+                    {/* Header Section */}
+                    <div className="px-8 py-6 border-b border-white/[0.05] bg-white/[0.02] flex justify-between items-center shrink-0">
+                        <div className="flex items-center gap-4">
+                            {getFirmLogo(selectedAccount.firmName) ? (
+                                <img src={getFirmLogo(selectedAccount.firmName)} alt="logo" className="w-12 h-12 rounded-xl bg-white shadow-md object-cover" />
+                            ) : (
+                                <div className="w-12 h-12 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-500 font-bold">
+                                    {selectedAccount.firmName.substring(0,2).toUpperCase()}
+                                </div>
+                            )}
+                            <div>
+                                <h2 className="text-2xl font-bold text-white">{selectedAccount.firmName}</h2>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className={cn("text-[10px] font-bold uppercase px-2 py-0.5 rounded border", getStatusColor(selectedAccount.status))}>
+                                        {selectedAccount.status}
+                                    </span>
+                                    <span className="text-white/40 text-xs font-mono">${selectedAccount.accountSize.toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button onClick={() => setIsDetailsModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full text-white/40 hover:text-white transition-colors">
+                            <X size={24} />
+                        </button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 custom-scrollbar">
+                        {/* LEFT COLUMN: Stats & History */}
+                        <div className="lg:col-span-1 space-y-6">
+                            {/* ROI Card */}
+                            <div className="bg-white/[0.02] border border-white/[0.05] p-6 rounded-2xl relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-[40px]" />
+                                <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Net Performance</p>
+                                <div className="flex items-baseline gap-2 mb-1">
+                                    <h3 className={cn("text-3xl font-mono font-bold tracking-tight", selectedAccount.totalPayouts - selectedAccount.cost > 0 ? "text-emerald-400" : "text-white")}>
+                                        {selectedAccount.totalPayouts - selectedAccount.cost > 0 ? '+' : ''}
+                                        ${(selectedAccount.totalPayouts - selectedAccount.cost).toLocaleString()}
+                                    </h3>
+                                </div>
+                                <p className="text-xs text-white/40 flex items-center gap-1">
+                                    Total Profit vs Costs
+                                </p>
+                            </div>
+
+                             {/* Breakdown */}
+                             <div className="bg-white/[0.02] border border-white/[0.05] rounded-2xl p-6 space-y-4">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-white/40">Total Payouts</span>
+                                    <span className="text-emerald-400 font-mono font-bold">+${selectedAccount.totalPayouts.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-white/40">Account Cost</span>
+                                    <span className="text-rose-400 font-mono font-bold">-${selectedAccount.cost.toLocaleString()}</span>
+                                </div>
+                                {selectedAccount.isSubscription && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-white/40">Monthly Fee</span>
+                                        <span className="text-rose-400 font-mono font-bold">-${selectedAccount.monthlyFee}/mo</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Payout History List */}
+                            <div className="bg-white/[0.02] border border-white/[0.05] rounded-2xl overflow-hidden flex-1 flex flex-col">
+                                <div className="p-4 border-b border-white/[0.05] flex justify-between items-center bg-white/[0.01]">
+                                    <h4 className="text-xs font-bold text-white/70 uppercase tracking-wider flex items-center gap-2">
+                                        <History size={14} /> Payout History
+                                    </h4>
+                                    <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white/60">{selectedAccount.payouts?.length || 0}</span>
+                                </div>
+                                <div className="max-h-[300px] overflow-y-auto custom-scrollbar p-2">
+                                    {selectedAccount.payouts && selectedAccount.payouts.length > 0 ? (
+                                        selectedAccount.payouts.map(p => (
+                                            <div key={p.id} className="flex items-center justify-between p-3 hover:bg-white/[0.03] rounded-lg transition-colors border border-transparent hover:border-white/[0.05] group">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                                                        <DollarSign size={14} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-white font-mono font-bold text-sm">${p.amount.toLocaleString()}</p>
+                                                        <p className="text-[10px] text-white/40">{new Date(p.date).toLocaleDateString()}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                     {/* Could add edit/delete payout here later */}
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="py-8 text-center text-white/20 text-xs italic">
+                                            No withdrawals recorded yet.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* RIGHT COLUMN: Certificate Viewer */}
+                        <div className="lg:col-span-2 flex flex-col h-full bg-[#0A0A0B] border border-white/[0.05] rounded-2xl overflow-hidden relative group">
+                            {selectedAccount.certificate ? (
+                                <>
+                                    <div className="absolute top-4 right-4 z-10 flex gap-2">
+                                        <button 
+                                            onClick={() => {
+                                                const link = document.createElement('a');
+                                                link.href = selectedAccount.certificate!;
+                                                link.download = `Certificate_${selectedAccount.firmName}.png`;
+                                                link.click();
+                                            }}
+                                            className="bg-black/60 hover:bg-black/80 backdrop-blur text-white p-2 rounded-lg border border-white/10 transition-colors"
+                                        >
+                                            <Download size={18} />
+                                        </button>
+                                        <button 
+                                            onClick={() => fileInputRefs.current[selectedAccount.id]?.click()}
+                                            className="bg-black/60 hover:bg-black/80 backdrop-blur text-white p-2 rounded-lg border border-white/10 transition-colors"
+                                        >
+                                            <PenSquare size={18} />
+                                        </button>
+                                    </div>
+                                    <div className="w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none absolute inset-0 z-0" />
+                                    <img 
+                                        src={selectedAccount.certificate} 
+                                        alt="Certificate" 
+                                        className="w-full h-full object-contain p-4 md:p-8 relative z-0" 
+                                    />
+                                </>
+                            ) : (
+                                <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+                                    <div className="w-20 h-20 bg-white/[0.02] border border-dashed border-white/[0.1] rounded-full flex items-center justify-center mb-4">
+                                        <Award size={32} className="text-white/20" />
+                                    </div>
+                                    <h4 className="text-white font-bold text-lg mb-2">No Certificate Uploaded</h4>
+                                    <p className="text-white/40 text-sm max-w-xs mb-6">Upload your funded certificate or payout proof to keep a visual record of your success.</p>
+                                    <button 
+                                        onClick={() => fileInputRefs.current[selectedAccount.id]?.click()}
+                                        className="bg-white text-black px-6 py-3 rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors flex items-center gap-2"
+                                    >
+                                        <Upload size={16} /> Upload Image
+                                    </button>
+                                </div>
+                            )}
+                            <input type="file" ref={el => fileInputRefs.current[selectedAccount.id] = el} onChange={(e) => handleCertificateUpload(selectedAccount.id, e)} accept="image/*" className="hidden" />
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
+        )}
+      </AnimatePresence>
 
       {/* ADD ACCOUNT MODAL - PREMIUM GLASS DESIGN */}
       <AnimatePresence>
@@ -622,7 +850,47 @@ export const FundedAccountsView: React.FC<Props> = ({ accounts, trades = [], onA
         )}
       </AnimatePresence>
       
-      {/* (Other modals would follow similar logic) */}
+      {/* Edit Modal Placeholder - could duplicate add modal logic later */}
+      <AnimatePresence>
+          {isEditModalOpen && selectedAccount && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                    className="bg-[#050505]/90 w-full max-w-2xl rounded-3xl border border-white/[0.1] p-8 shadow-2xl"
+                  >
+                      <div className="flex justify-between items-center mb-6">
+                          <h3 className="text-xl font-bold text-white">Edit Account</h3>
+                          <button onClick={() => setIsEditModalOpen(false)}><X size={24} className="text-white/40 hover:text-white"/></button>
+                      </div>
+                      
+                      <div className="space-y-4">
+                           <div>
+                              <label className="block text-[10px] text-white/40 uppercase font-bold mb-1">Firm Name</label>
+                              <input className="w-full bg-white/[0.05] border border-white/[0.1] rounded-lg px-4 py-3 text-white" value={editFirmName} onChange={e => setEditFirmName(e.target.value)} />
+                           </div>
+                           <div>
+                              <label className="block text-[10px] text-white/40 uppercase font-bold mb-1">Status</label>
+                              <select 
+                                value={selectedAccount.status} 
+                                onChange={(e) => handleStatusChange(selectedAccount.id, e.target.value)}
+                                className="w-full bg-white/[0.05] border border-white/[0.1] rounded-lg px-4 py-3 text-white"
+                              >
+                                 {Object.values(AccountStatus).map(s => <option key={s} value={s} className="bg-black">{s}</option>)}
+                              </select>
+                           </div>
+                            <div>
+                              <label className="block text-[10px] text-white/40 uppercase font-bold mb-1">Initial Cost</label>
+                              <input type="number" className="w-full bg-white/[0.05] border border-white/[0.1] rounded-lg px-4 py-3 text-white" value={editCost} onChange={e => setEditCost(e.target.value)} />
+                           </div>
+                           
+                           <button onClick={handleSaveEdit} className="w-full bg-brand-500 text-black font-bold py-3 rounded-xl mt-4">Update Account</button>
+                      </div>
+                  </motion.div>
+              </div>
+          )}
+      </AnimatePresence>
     </div>
   );
 };
